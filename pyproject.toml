@@ -10,7 +10,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-long_description = ""
 
 [tool.maturin]
 python-source = "python"
