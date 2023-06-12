@@ -342,12 +342,12 @@ impl CCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<(ConjunctiveCompositionKeys, String)>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<ConjunctiveCompositionKeys> {
         self.conjunctive_composition_string_values
             .iter()
             .filter_map(|conjunctive_composition_string_value| {
                 match conjunctive_composition_string_value.evaluate(interpretation.clone()) {
-                    Some(keys) => Some(keys.into_iter().map(|key| (conjunctive_composition_string_value.clone(), key)).collect()),
+                    Some(_) => Some(conjunctive_composition_string_value.clone()),
                     None => None,
                 }
             })
@@ -380,12 +380,12 @@ impl DCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<(DisjunctiveCompositionKeys, String)>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<DisjunctiveCompositionKeys> {
         self.disjunctive_composition_string_values
             .iter()
             .filter_map(|disjunctive_composition_string_value| {
                 match disjunctive_composition_string_value.evaluate(interpretation.clone()) {
-                    Some(keys) => Some(keys.into_iter().map(|key| (disjunctive_composition_string_value.clone(), key)).collect()),
+                    Some(_) => Some(disjunctive_composition_string_value.clone()),
                     None => None,
                 }
             })
