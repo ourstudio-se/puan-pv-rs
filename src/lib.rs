@@ -143,6 +143,14 @@ impl ConjunctiveComposition {
         }
     }
 
+    pub fn _variables(&self) -> Vec<String> {
+        let mut variables = self.single_operands.clone();
+        for operand in self.composite_operands.clone() {
+            variables.extend(operand.variables);
+        }
+        variables
+    }
+
     #[getter]
     pub fn composite_operands(&self) -> PyResult<Vec<Disjunction>> {
         Ok(self.composite_operands.clone())
@@ -151,6 +159,11 @@ impl ConjunctiveComposition {
     #[getter]
     pub fn single_operands(&self) -> PyResult<Vec<String>> {
         Ok(self.single_operands.clone())
+    }
+
+    #[getter]
+    pub fn variables(&self) -> PyResult<Vec<String>> {
+        return Ok(self._variables())
     }
 
     pub fn hash(&self) -> u64 {
@@ -179,6 +192,19 @@ impl DisjunctiveComposition {
             composite_operands,
             single_operands,
         }
+    }
+
+    pub fn _variables(&self) -> Vec<String> {
+        let mut variables = self.single_operands.clone();
+        for operand in self.composite_operands.clone() {
+            variables.extend(operand.variables);
+        }
+        variables
+    }
+
+    #[getter]
+    pub fn variables(&self) -> PyResult<Vec<String>> {
+        return Ok(self._variables())
     }
 
     #[getter]
@@ -220,6 +246,11 @@ impl ConjunctiveCompositionKeys {
     }
 
     #[getter]
+    pub fn variables(&self) -> PyResult<Vec<String>> {
+        Ok(self.conjuctive_compositions._variables())
+    }
+
+    #[getter]
     pub fn conjunctive_compositions(&self) -> PyResult<ConjunctiveComposition> {
         Ok(self.conjuctive_compositions.clone())
     }
@@ -257,6 +288,11 @@ impl DisjunctiveCompositionKeys {
             disjunctive_compositions,
             keys,
         }
+    }
+
+    #[getter]
+    pub fn variables(&self) -> PyResult<Vec<String>> {
+        Ok(self.disjunctive_compositions._variables())
     }
 
     #[getter]
@@ -306,10 +342,15 @@ impl CCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<String>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<(ConjunctiveCompositionKeys, String)>> {
         self.conjunctive_composition_string_values
             .iter()
-            .filter_map(|ccsv| ccsv.evaluate(interpretation.clone()))
+            .filter_map(|conjunctive_composition_string_value| {
+                match conjunctive_composition_string_value.evaluate(interpretation.clone()) {
+                    Some(keys) => Some(keys.into_iter().map(|key| (conjunctive_composition_string_value.clone(), key)).collect()),
+                    None => None,
+                }
+            })
             .collect()
     }
 }
@@ -339,10 +380,15 @@ impl DCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<String>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<Vec<(DisjunctiveCompositionKeys, String)>> {
         self.disjunctive_composition_string_values
             .iter()
-            .filter_map(|dcsv| dcsv.evaluate(interpretation.clone()))
+            .filter_map(|disjunctive_composition_string_value| {
+                match disjunctive_composition_string_value.evaluate(interpretation.clone()) {
+                    Some(keys) => Some(keys.into_iter().map(|key| (disjunctive_composition_string_value.clone(), key)).collect()),
+                    None => None,
+                }
+            })
             .collect()
     }
 }
