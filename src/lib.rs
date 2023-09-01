@@ -60,6 +60,40 @@ where
     hasher.finish()
 }
 
+
+#[pyclass]
+#[derive(Clone, Hash)]
+pub struct VariableKeys {
+    variables: Vec<String>,
+    keys: Vec<String>,
+}
+
+#[pymethods]
+impl VariableKeys {
+
+    #[new]
+    pub fn new(variables: Vec<String>, keys: Vec<String>) -> Self {
+        Self {
+            variables,
+            keys,
+        }
+    }
+
+    #[getter]
+    pub fn variable(&self) -> PyResult<Vec<String>> {
+        Ok(self.variables.clone())
+    }
+
+    #[getter]
+    pub fn keys(&self) -> PyResult<Vec<String>> {
+        Ok(self.keys.clone())
+    }
+
+    pub fn hash(&self) -> u64 {
+        hashit(self)
+    }
+}
+
 // A simple way
 #[pyclass]
 #[derive(Clone, Hash)]
@@ -264,9 +298,14 @@ impl ConjunctiveCompositionKeys {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Option<Vec<String>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Option<VariableKeys> {
         match self.conjuctive_compositions.evaluate(interpretation) {
-            true => Some(self.keys.clone()),
+            true => Some(
+                VariableKeys {
+                    variables: self.conjuctive_compositions._variables(),
+                    keys: self.keys.clone()
+                }
+            ),
             false => None,
         }
     }
@@ -309,9 +348,14 @@ impl DisjunctiveCompositionKeys {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Option<Vec<String>> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Option<VariableKeys> {
         match self.disjunctive_compositions.evaluate(interpretation) {
-            true => Some(self.keys.clone()),
+            true => Some(
+                VariableKeys {
+                    variables: self.disjunctive_compositions._variables(),
+                    keys: self.keys.clone()
+                }
+            ),
             false => None,
         }
     }
@@ -342,14 +386,11 @@ impl CCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<ConjunctiveCompositionKeys> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<VariableKeys> {
         self.conjunctive_composition_string_values
             .iter()
             .filter_map(|conjunctive_composition_string_value| {
-                match conjunctive_composition_string_value.evaluate(interpretation.clone()) {
-                    Some(_) => Some(conjunctive_composition_string_value.clone()),
-                    None => None,
-                }
+                conjunctive_composition_string_value.evaluate(interpretation.clone())
             })
             .collect()
     }
@@ -380,14 +421,11 @@ impl DCKeysIterable {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<DisjunctiveCompositionKeys> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<VariableKeys> {
         self.disjunctive_composition_string_values
             .iter()
             .filter_map(|disjunctive_composition_string_value| {
-                match disjunctive_composition_string_value.evaluate(interpretation.clone()) {
-                    Some(_) => Some(disjunctive_composition_string_value.clone()),
-                    None => None,
-                }
+                disjunctive_composition_string_value.evaluate(interpretation.clone())
             })
             .collect()
     }
@@ -425,7 +463,7 @@ impl CCKeyGroup {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<ConjunctiveCompositionKeys> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<VariableKeys> {
         match self.key.iter().all(|x| interpretation.contains(x)) {
             true => self.cc_keys_iterable.evaluate(interpretation),
             false => vec![],
@@ -465,11 +503,54 @@ impl DCKeyGroup {
         hashit(self)
     }
 
-    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<DisjunctiveCompositionKeys> {
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<VariableKeys> {
         match self.key.iter().all(|x| interpretation.contains(x)) {
             true => self.dc_keys_iterable.evaluate(interpretation),
             false => vec![],
         }
+    }
+}
+
+#[pyclass]
+#[derive(Clone, Hash)]
+pub struct KeyGroups {
+    cc_key_groups: Vec<CCKeyGroup>,
+    dc_key_groups: Vec<DCKeyGroup>,
+}
+
+#[pymethods]
+impl KeyGroups {
+
+    #[new]
+    pub fn new(cc_key_groups: Vec<CCKeyGroup>, dc_key_groups: Vec<DCKeyGroup>) -> Self {
+        Self {
+            cc_key_groups,
+            dc_key_groups,
+        }
+    }
+
+    #[getter]
+    pub fn cc_key_groups(&self) -> PyResult<Vec<CCKeyGroup>> {
+        Ok(self.cc_key_groups.clone())
+    }
+
+    #[getter]
+    pub fn dc_key_groups(&self) -> PyResult<Vec<DCKeyGroup>> {
+        Ok(self.dc_key_groups.clone())
+    }
+
+    pub fn hash(&self) -> u64 {
+        hashit(self)
+    }
+
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<VariableKeys> {
+        self.cc_key_groups.iter().flat_map(|cc_key_group| {
+            cc_key_group.evaluate(interpretation.clone())
+        }).chain(
+            self.dc_key_groups.iter().flat_map(|dc_key_group| {
+                dc_key_group.evaluate(interpretation.clone())
+            })
+        ).collect()
     }
 }
 
