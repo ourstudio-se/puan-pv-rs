@@ -567,6 +567,7 @@ fn puan_pv_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<DCKeysIterable>()?;
     m.add_class::<DCKeyGroup>()?;
     m.add_class::<CCKeyGroup>()?;
+    m.add_class::<KeyGroups>()?;
     Ok(())
 }
 
