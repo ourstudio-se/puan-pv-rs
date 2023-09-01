@@ -393,6 +393,86 @@ impl DCKeysIterable {
     }
 }
 
+#[pyclass]
+#[derive(Clone, Hash)]
+pub struct CCKeyGroup {
+    key: Vec<String>,
+    cc_keys_iterable: CCKeysIterable,
+}
+
+#[pymethods]
+impl CCKeyGroup {
+
+    #[new]
+    pub fn new(key: Vec<String>, cc_keys_iterable: CCKeysIterable) -> Self {
+        Self {
+            key,
+            cc_keys_iterable,
+        }
+    }
+
+    #[getter]
+    pub fn key(&self) -> PyResult<Vec<String>> {
+        Ok(self.key.clone())
+    }
+
+    #[getter]
+    pub fn dc_keys_iterable(&self) -> PyResult<CCKeysIterable> {
+        Ok(self.cc_keys_iterable.clone())
+    }
+
+    pub fn hash(&self) -> u64 {
+        hashit(self)
+    }
+
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<ConjunctiveCompositionKeys> {
+        match self.key.iter().all(|x| interpretation.contains(x)) {
+            true => self.cc_keys_iterable.evaluate(interpretation),
+            false => vec![],
+        }
+    }
+}
+
+#[pyclass]
+#[derive(Clone, Hash)]
+pub struct DCKeyGroup {
+    key: Vec<String>,
+    dc_keys_iterable: DCKeysIterable,
+}
+
+#[pymethods]
+impl DCKeyGroup {
+
+    #[new]
+    pub fn new(key: Vec<String>, dc_keys_iterable: DCKeysIterable) -> Self {
+        Self {
+            key,
+            dc_keys_iterable,
+        }
+    }
+
+    #[getter]
+    pub fn key(&self) -> PyResult<Vec<String>> {
+        Ok(self.key.clone())
+    }
+
+    #[getter]
+    pub fn dc_keys_iterable(&self) -> PyResult<DCKeysIterable> {
+        Ok(self.dc_keys_iterable.clone())
+    }
+
+    pub fn hash(&self) -> u64 {
+        hashit(self)
+    }
+
+    pub fn evaluate(&self, interpretation: Vec<String>) -> Vec<DisjunctiveCompositionKeys> {
+        match self.key.iter().all(|x| interpretation.contains(x)) {
+            true => self.dc_keys_iterable.evaluate(interpretation),
+            false => vec![],
+        }
+    }
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn puan_pv_rs(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -404,6 +484,8 @@ fn puan_pv_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<DisjunctiveComposition>()?;
     m.add_class::<DisjunctiveCompositionKeys>()?;
     m.add_class::<DCKeysIterable>()?;
+    m.add_class::<DCKeyGroup>()?;
+    m.add_class::<CCKeyGroup>()?;
     Ok(())
 }
 
